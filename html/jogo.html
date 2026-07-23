@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo da Vida</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="top-navbar" aria-label="Resumo do jogador">
+        <div class="navbar-brand">
+            <img class="game-logo" src="../assets/images/jogo-da-vida-logo.png" alt="Jogo da Vida">
+        </div>
+        <div class="header-stats">
+        <div class="stat-card">
+            <div class="stat-title">Idade / Mês</div>
+            <div class="stat-value blue" id="ui-tempo">18 anos (Mês 1)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Saldo em Conta</div>
+            <div class="stat-value" id="ui-saldo">R$ 1.000,00</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Patrimônio Total</div>
+            <div class="stat-value blue" id="ui-patrimonio">R$ 1.000,00</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Taxa SELIC</div>
+            <div class="stat-value warn" id="ui-selic">10,75% a.a.</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Inflação (IPCA)</div>
+            <div class="stat-value warn" id="ui-inflacao">4,50% a.a.</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Felicidade</div>
+            <div class="stat-value" id="ui-felicidade-topo">60%</div>
+        </div>
+        </div>
+    </header>
+
+    <!-- Navegação por Abas -->
+    <div class="nav-tabs">
+        <button class="tab-btn" onclick="switchTab('geral')">Visão Geral</button>
+        <button class="tab-btn active" onclick="switchTab('carreira')">💼 Carreira & Negócios</button>
+        <button class="tab-btn" onclick="switchTab('investimentos')">📈 Investimentos</button>
+        <button class="tab-btn" onclick="switchTab('tesouro')">🏛️ Tesouro Direto</button>
+        <button class="tab-btn" onclick="switchTab('credito')">💳 Crédito</button>
+        <button class="tab-btn" onclick="switchTab('custos')">🧾 Custos</button>
+        <button class="tab-btn" onclick="switchTab('bens')">🏠 Bens & Imóveis</button>
+        <button class="tab-btn" onclick="switchTab('protecao')">🛡️ Proteção & Seguros</button>
+        <button class="tab-btn" onclick="switchTab('vida')">❤️ Vida & Família</button>
+    </div>
+
+    <div class="main-content">
+        <!-- Áreas de Ação Dinâmicas -->
+        <div>
+            <!-- ABA PRINCIPAL: VISÃO GERAL -->
+            <div id="tab-geral" class="tab-content">
+                <div class="panel">
+                    <h3>Resumo Financeiro</h3>
+                    <div class="summary-grid">
+                        <div class="summary-card"><span>Saldo disponível</span><strong id="geral-saldo">R$ 0,00</strong></div>
+                        <div class="summary-card"><span>Total investido</span><strong id="geral-investimentos">R$ 0,00</strong></div>
+                        <div class="summary-card"><span>Patrimônio total</span><strong id="geral-patrimonio">R$ 0,00</strong></div>
+                        <div class="summary-card"><span>Custos mensais estimados</span><strong id="geral-custos">R$ 0,00</strong></div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Minha Jornada</h3>
+                    <p>Profissão: <strong id="geral-cargo">Desempregado</strong></p>
+                    <p>Formação: <strong id="geral-formacao">Ensino Médio</strong></p>
+                    <p>Experiência profissional: <strong id="geral-experiencia">0 meses</strong></p>
+                    <p>Renda mensal atual: <strong id="geral-renda" class="positive-value">R$ 0,00</strong></p>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="panel">
+                        <div class="chart-heading">
+                            <div>
+                                <h3>Evolução do Patrimônio</h3>
+                                <p class="hint">Registro mensal do patrimônio total desde janeiro de 2026.</p>
+                            </div>
+                            <strong id="geral-patrimonio-atual" class="positive-value">R$ 0,00</strong>
+                        </div>
+                        <svg id="grafico-patrimonio" class="patrimonio-chart" role="img" aria-label="Gráfico de evolução anual do patrimônio"></svg>
+                        <p id="descricao-grafico-patrimonio" class="hint"></p>
+                    </div>
+
+                    <div class="panel">
+                        <h3>SELIC e IPCA ao longo do tempo</h3>
+                        <p class="hint">Acompanhe as taxas mensais da economia simulada.</p>
+                        <svg id="grafico-economia" class="patrimonio-chart" role="img" aria-label="Gráfico mensal da Selic e do IPCA"></svg>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Família e negócios</h3>
+                    <div class="general-overview-grid">
+                        <section><h4>Filhos</h4><div id="geral-filhos" class="general-list"></div></section>
+                        <section><h4>Empresas</h4><div id="geral-empresas" class="general-list"></div></section>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA 1: CARREIRA & NEGÓCIOS -->
+            <div id="tab-carreira" class="tab-content active">
+                <div class="panel">
+                    <h3>Carreira Profissional</h3>
+                    <p>Cargo Atual: <strong id="ui-cargo">Desempregado</strong></p>
+                    <p>Salário Mensal: <strong id="ui-salario" style="color:var(--accent)">R$ 0,00</strong></p>
+                    <p>Nível de Currículo/Escolaridade: <span id="ui-curriculo">Ensino Médio (Nível 1)</span></p>
+                    <p>Curso Superior: <strong id="ui-curso-superior">Ainda não escolhido</strong></p>
+                    <p>Faculdade: <strong id="ui-faculdade">Não iniciada</strong></p>
+                    <p>Experiência no cargo: <strong id="ui-experiencia-cargo">0 meses</strong></p>
+                    <button class="btn-action btn-blue" onclick="melhorarCurriculo()">Fazer Cursos / Faculdade (Custo: R$ 1.200)</button>
+                    <button class="btn-action" id="btn-procurar-emprego" onclick="procurarEmprego()">Procurar Emprego / Candidatar-se</button>
+                    <p class="hint" id="ui-chance-emprego"></p>
+                </div>
+
+                <div class="panel" id="painel-pos-graduacao" hidden>
+                    <h3>Pós-graduação</h3>
+                    <p>Uma especialização fortalece o currículo e amplia suas opções de carreira.</p>
+                    <button class="btn-action btn-blue" onclick="fazerPosGraduacao()">Iniciar pós-graduação (R$ 6.500)</button>
+                </div>
+
+                <div class="panel" id="painel-curso-superior" hidden>
+                    <h3>Escolha seu Curso Superior</h3>
+                    <p>Escolha a graduação. A mensalidade é cobrada ao avançar cada mês até a conclusão do curso.</p>
+                    <select id="curso-superior">
+                        <option value="">Selecione uma área</option>
+                        <option value="financeiro">Financeiro</option>
+                        <option value="tech">Tech</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="direito">Direito</option>
+                        <option value="medicina">Medicina</option>
+                    </select>
+                    <button class="btn-action" onclick="escolherCursoSuperior()">Iniciar faculdade</button>
+                </div>
+
+                <div class="panel">
+                    <h3>Cargos, salários e requisitos</h3>
+                    <div id="lista-cargos" class="career-list"></div>
+                </div>
+
+                <div class="panel">
+                    <h3>Empreendedorismo</h3>
+                    <p>Status das empresas: <span id="ui-empresa-status">Sem empresa</span></p>
+                    <label for="ramo-startup">Ramo da startup</label>
+                    <select id="ramo-startup">
+                        <option value="">Selecione um ramo</option>
+                        <option value="tech">Tecnologia</option>
+                        <option value="fintech">Fintech</option>
+                        <option value="saude">Saúde</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="ecommerce">E-commerce</option>
+                    </select>
+                    <label for="nome-startup">Nome da startup</label>
+                    <input id="nome-startup" class="investment-input" type="text" maxlength="40" placeholder="Ex.: Aurora Labs">
+                    <button class="btn-action" onclick="abrirEmpresa()">Abrir uma Startup (Investimento: R$ 500.000)</button>
+                    <div id="lista-empresas" class="company-list"></div>
+                </div>
+            </div>
+
+            <!-- ABA 2: INVESTIMENTOS -->
+            <div id="tab-investimentos" class="tab-content">
+                <div class="panel">
+                    <h3>Escolha o tipo de investimento</h3>
+                    <p class="hint">As cotações exibidas são referências de 23/07/2026. No jogo, preços e índices variam a cada mês.</p>
+                    <div class="investment-nav">
+                        <button class="investment-category active" data-category="rendaFixa" onclick="mostrarCategoriaInvestimento('rendaFixa')">Renda Fixa</button>
+                        <button class="investment-category" data-category="acoes" onclick="mostrarCategoriaInvestimento('acoes')">Ações B3</button>
+                        <button class="investment-category" data-category="fiis" onclick="mostrarCategoriaInvestimento('fiis')">FIIs</button>
+                        <button class="investment-category" data-category="etfs" onclick="mostrarCategoriaInvestimento('etfs')">ETFs</button>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3 id="titulo-categoria-investimento">Renda Fixa</h3>
+                    <p id="descricao-categoria-investimento" class="hint"></p>
+                    <div class="investment-lesson">
+                        <div><span>Risco</span><strong id="risco-categoria-investimento"></strong></div>
+                        <div><span>Rentabilidade</span><strong id="rentabilidade-categoria-investimento"></strong></div>
+                        <p id="como-funciona-categoria-investimento"></p>
+                        <p id="atencao-categoria-investimento" class="hint"></p>
+                    </div>
+                    <div id="lista-investimentos" class="investment-grid"></div>
+                </div>
+            </div>
+
+            <div id="tab-tesouro" class="tab-content">
+                <div class="panel">
+                    <h3>Tesouro Direto</h3>
+                    <p class="hint">Títulos de referência do Tesouro Direto. As taxas no jogo acompanham SELIC, IPCA ou uma taxa prefixada simulada.</p>
+                    <div class="investment-lesson">
+                        <div><span>Risco</span><strong>Baixo risco de crédito; preço pode oscilar antes do vencimento.</strong></div>
+                        <div><span>Rentabilidade</span><strong>Selic, IPCA + taxa ou taxa prefixada.</strong></div>
+                        <p>Você empresta dinheiro ao governo. O Tesouro Selic costuma ser usado para reserva de emergência; IPCA+ busca preservar o poder de compra; o Prefixado trava uma taxa nominal.</p>
+                        <p class="hint">Em resgate antecipado, o valor depende do preço de mercado (marcação a mercado). Levar o título até o vencimento reduz essa incerteza.</p>
+                    </div>
+                    <div id="lista-tesouro-direto" class="investment-grid"></div>
+                </div>
+            </div>
+
+            <div id="tab-credito" class="tab-content">
+                <div class="panel credit-panel">
+                    <h3>Empréstimo pessoal</h3>
+                    <p>Escolha o valor e prazo. O dinheiro entra na conta agora e as parcelas entram no relatório mensal.</p>
+                    <label for="valor-emprestimo">Valor: <strong id="valor-emprestimo-label">R$ 5.000,00</strong></label>
+                    <input id="valor-emprestimo" type="range" min="1000" max="50000" step="1000" value="5000" oninput="atualizarValoresCredito()">
+                    <label for="prazo-emprestimo">Prazo</label>
+                    <select id="prazo-emprestimo" onchange="atualizarValoresCredito()"><option value="12">12 meses</option><option value="24">24 meses</option><option value="36">36 meses</option></select>
+                    <button class="btn-action" onclick="solicitarEmprestimo()">Solicitar empréstimo</button>
+                </div>
+
+                <div class="panel credit-panel">
+                    <h3>Consórcio</h3>
+                    <p>Planeje uma carta de crédito. Você paga parcelas mensais e pode ser contemplado na simulação.</p>
+                    <label for="valor-consorcio">Carta de crédito: <strong id="valor-consorcio-label">R$ 50.000,00</strong></label>
+                    <input id="valor-consorcio" type="range" min="20000" max="200000" step="5000" value="50000" oninput="atualizarValoresCredito()">
+                    <label for="prazo-consorcio">Prazo</label>
+                    <select id="prazo-consorcio"><option value="60">60 meses</option><option value="100">100 meses</option><option value="150">150 meses</option></select>
+                    <button class="btn-action btn-blue" onclick="aderirConsorcio()">Entrar no consórcio</button>
+                </div>
+
+                <div class="panel">
+                    <h3>Meus contratos</h3>
+                    <div id="lista-creditos"><p>Nenhum contrato ativo.</p></div>
+                </div>
+            </div>
+
+            <div id="tab-custos" class="tab-content">
+                <div class="panel">
+                    <h3>Custos mensais previstos</h3>
+                    <p class="hint">A alimentação e os cuidados aumentam conforme a família cresce. Os valores são recalculados a cada mudança no patrimônio ou nos contratos.</p>
+                    <p>Total estimado: <strong id="custos-total-mensais" class="asset-price">R$ 0,00</strong></p>
+                    <div id="lista-custos-mensais" class="cost-list"></div>
+                    <h3 class="property-section-title">Ações financeiras</h3>
+                    <div id="acoes-custos" class="cost-actions"></div>
+                </div>
+            </div>
+
+            <!-- ABA 3: BENS & IMÓVEIS -->
+            <div id="tab-bens" class="tab-content">
+                <div class="panel">
+                    <h3>Adquirir Veículos & Imóveis</h3>
+                    <p class="hint">Escolha um veículo. Todos exigem um gasto mensal de manutenção, seguro e uso equivalente a 5% do valor do carro.</p>
+                    <div id="lista-veiculos-disponiveis" class="vehicle-grid"></div>
+                    <h3 class="property-section-title">Imóveis</h3>
+                    <p class="hint">Os imóveis valorizam mensalmente conforme seu perfil e a inflação. Ao alugar, o valor é reajustado pelo IPCA e nunca ultrapassa 10% do valor atual do bem por mês.</p>
+                    <div id="lista-imoveis-disponiveis" class="property-grid"></div>
+                </div>
+
+                <div class="panel">
+                    <h3>Meus Bens Adquiridos</h3>
+                    <div id="lista-bens"><p>Nenhum bem registrado.</p></div>
+                </div>
+            </div>
+
+            <!-- ABA 4: PROTEÇÃO & SEGUROS -->
+            <div id="tab-protecao" class="tab-content">
+                <div class="panel">
+                    <h3>Gerenciamento de Riscos</h3>
+                    <p>Seguros protegem seu patrimônio contra catástrofes e imprevistos inesperados.</p>
+                    
+                    <div class="card-item">
+                        <strong>Plano de Saúde Familiar</strong><br>
+                        Custo mensal dinâmico: <strong id="custo-saude">R$ 0,00</strong><br>
+                        Status: <strong id="st-saude" style="color:var(--danger)">Não contratado</strong>
+                        <button class="btn-action" onclick="toggleSeguro('saude')">Contratar / Cancelar</button>
+                    </div>
+
+                    <div class="card-item">
+                        <strong>Seguro Residencial (Contra Tempestades, Furacões e Desastres)</strong><br>
+                        Custo mensal dinâmico: <strong id="custo-residencial">R$ 0,00</strong><br>
+                        Status: <strong id="st-residencial" style="color:var(--danger)">Não contratado</strong>
+                        <button class="btn-action" onclick="toggleSeguro('residencial')">Contratar / Cancelar</button>
+                    </div>
+                    <p class="hint" id="detalhe-seguros"></p>
+                </div>
+            </div>
+
+            <!-- ABA 5: VIDA & FAMÍLIA -->
+            <div id="tab-vida" class="tab-content">
+                <div class="panel">
+                    <h3>Relacionamento & Filhos</h3>
+                    <p>Status Conjugal: <strong id="ui-relacionamento">Solteiro(a)</strong></p>
+                    <p>Filhos: <strong id="ui-filhos">0</strong></p>
+                    <button class="btn-action btn-blue" onclick="buscarParceiro()">Procurar Parceiro(a)</button>
+                    <label for="nome-filho">Nome do filho(a)</label>
+                    <input id="nome-filho" class="investment-input" type="text" maxlength="30" placeholder="Digite o nome">
+                    <button class="btn-action" onclick="terFilho()">Ter um Filho</button>
+                    <div id="lista-filhos" class="children-list"></div>
+                </div>
+
+                <div class="panel">
+                    <h3>Estilo de Vida</h3>
+                    <p>Felicidade: <strong id="ui-felicidade">60%</strong></p>
+                    <div class="happiness-bar" aria-label="Nível de felicidade"><span id="barra-felicidade"></span></div>
+                    <button class="btn-action" id="btn-ferias" onclick="tirarFerias()">Tirar férias</button>
+                    <p class="hint" id="ui-status-ferias"></p>
+                    <button class="btn-action btn-blue" onclick="viajar()">Fazer Viagem Internacional (R$ 8.000)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Painel Lateral: Log e Passagem do Tempo -->
+        <div>
+            <div class="panel">
+                <button id="btn-avancar" class="advance-btn" onclick="avancarMes()">⏭️ Avançar 1 Mês</button>
+                <p style="text-align:center; font-size: 0.8rem; color:var(--text-muted); margin-top: 8px;">
+                    Cada clique simula o fluxo financeiro do mês seguinte.
+                </p>
+            </div>
+
+            <div class="panel">
+                <h3>Diário de Eventos</h3>
+                <div class="log-box" id="log-box">
+                    <div class="log-msg log-info">Bem-vindo ao Simulador de Vida Financeira! Monte sua estratégia e avance os meses.</div>
+                </div>
+            </div>
+        </div>
+        </div>
+    </header>
+
+    <dialog id="relatorio-mensal" class="monthly-report">
+        <div class="report-header">
+            <div>
+                <p class="report-eyebrow">Fechamento financeiro</p>
+                <h2 id="relatorio-titulo">Relatório mensal</h2>
+            </div>
+            <button class="report-close" type="button" onclick="fecharRelatorioMensal()" aria-label="Fechar relatório">×</button>
+        </div>
+        <div class="report-summary">
+            <div><span>Ganhos</span><strong id="relatorio-total-ganhos" class="report-positive">R$ 0,00</strong></div>
+            <div><span>Gastos</span><strong id="relatorio-total-gastos" class="report-negative">R$ 0,00</strong></div>
+            <div><span>Saldo final</span><strong id="relatorio-saldo-final">R$ 0,00</strong></div>
+        </div>
+        <div class="report-columns">
+            <section>
+                <h3>De onde veio o ganho</h3>
+                <div id="relatorio-ganhos" class="report-list"></div>
+            </section>
+            <section>
+                <h3>Onde o dinheiro foi gasto</h3>
+                <div id="relatorio-gastos" class="report-list"></div>
+            </section>
+        </div>
+        <p id="relatorio-resultado" class="report-result"></p>
+        <button class="btn-action" type="button" onclick="fecharRelatorioMensal()">Continuar</button>
+    </dialog>
+    <dialog id="final-jogo" class="final-game-dialog">
+        <p class="report-eyebrow">Fim da jornada • 80 anos</p>
+        <h2 id="final-classificacao">Sua classificação final</h2>
+        <p id="final-mensagem" class="final-message"></p>
+        <div id="final-estatisticas" class="final-stats"></div>
+        <button class="btn-action" type="button" onclick="document.getElementById('final-jogo').close()">Ver resultado</button>
+    </dialog>
+    <script src="../js/script.js"></script>
+</body>
+</html>
