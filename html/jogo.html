@@ -122,7 +122,7 @@
                 <div class="panel" id="painel-pos-graduacao" hidden>
                     <h3>Pós-graduação</h3>
                     <p>Uma especialização fortalece o currículo e amplia suas opções de carreira.</p>
-                    <button class="btn-action btn-blue" onclick="fazerPosGraduacao()">Iniciar pós-graduação (R$ 6.500)</button>
+                    <button class="btn-action btn-blue" onclick="fazerPosGraduacao()">Iniciar pós-graduação (R$ 50.000)</button>
                 </div>
 
                 <div class="panel" id="painel-curso-superior" hidden>
@@ -349,6 +349,16 @@
         </div>
         <p id="relatorio-resultado" class="report-result"></p>
         <button class="btn-action" type="button" onclick="fecharRelatorioMensal()">Continuar</button>
+    </dialog>
+    <dialog id="filho-indesejado" class="unexpected-child-dialog" oncancel="event.preventDefault()">
+        <p class="report-eyebrow">Evento inesperado</p>
+        <h2>Um filho não planejado está a caminho.</h2>
+        <p>Essa nova responsabilidade fará parte da sua jornada financeira. Escolha um nome para continuar.</p>
+        <form onsubmit="event.preventDefault(); nomearFilhoIndesejado();">
+            <label for="nome-filho-indesejado">Nome do filho(a)</label>
+            <input id="nome-filho-indesejado" class="investment-input" type="text" maxlength="30" placeholder="Digite o nome" required autofocus>
+            <button class="btn-action" type="submit">Confirmar nome</button>
+        </form>
     </dialog>
     <dialog id="final-jogo" class="final-game-dialog">
         <p class="report-eyebrow">Fim da jornada • 80 anos</p>

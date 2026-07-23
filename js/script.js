@@ -19,6 +19,7 @@
             experienciaProfissional: 0,
             experienciaNoCargo: 0,
             ultimaCandidaturaMes: 0,
+            ultimoCargoId: null,
             posGraduacao: false,
             
             // Empresas
@@ -84,6 +85,8 @@
             // Vida Pessoal
             parceiro: false,
             filhos: [], // { nome, idadeMeses }
+            filhoIndesejadoPendente: false,
+            relatorioAguardandoNome: null,
             felicidade: 90,
             ultimaFeriasMes: 0,
             aposentado: false,
@@ -91,6 +94,10 @@
             jogoEncerrado: false,
             finalExibido: false
         };
+
+        ["acoes", "fiis", "etfs"].forEach(categoria => {
+            gameState.investimentos[categoria].forEach(ativo => { ativo.precoMedio = 0; });
+        });
 
         const areasProfissionais = {
             financeiro: { nome: "Financeiro", mensalidade: 1500, duracaoMeses: 48, salarios: [3400, 6200, 10500, 17000, 23000] },
@@ -103,7 +110,8 @@
         const niveisEscolaridade = ["Ensino Médio", "Curso Técnico", "Ensino Superior", "Pós-graduação", "Especialização"];
         const cargosGerais = [
             { id: "jovem-aprendiz", titulo: "Jovem Aprendiz", nivel: 0, req: 1, experienciaMinima: 0, salario: 1200, requisito: "Currículo nível 1" },
-            { id: "assistente", titulo: "Assistente Administrativo", nivel: 1, req: 2, experienciaMinima: 6, salario: 2800 }
+            { id: "assistente", titulo: "Assistente Administrativo", nivel: 1, req: 2, experienciaMinima: 6, salario: 2800 },
+            { id: "ceo", titulo: "CEO", nivel: 8, req: 5, experienciaMinima: 120, salario: 100000, requerPos: true, requisito: "Pós-graduação + 120 meses de experiência" }
         ];
         let categoriaInvestimentoAtual = "rendaFixa";
 
@@ -211,6 +219,8 @@
             const cargoAtual = obterCargoAtual();
 
             if (!cargoAtual) {
+                const ultimoCargo = obterTabelaCargos().find(cargo => cargo.id === gameState.ultimoCargoId);
+                if (ultimoCargo && vagasDisponiveis.some(cargo => cargo.id === ultimoCargo.id)) return ultimoCargo;
                 return gameState.faculdadeEmAndamento
                     ? vagasDisponiveis.find(cargo => cargo.id === `${gameState.cursoSuperior}-estagio`)
                     : gameState.faculdadeConcluida
@@ -312,7 +322,7 @@
             lista.innerHTML = gameState.investimentos[categoriaInvestimentoAtual].map(ativo => {
                 const campoValor = `valor-${categoriaInvestimentoAtual}-${ativo.id}`;
                 const campoCotas = `cotas-${ativo.id}`;
-                const estimativaCotas = ["acoes", "fiis"].includes(categoriaInvestimentoAtual)
+                const estimativaCotas = ["acoes", "fiis", "etfs"].includes(categoriaInvestimentoAtual)
                     ? `<p id="${campoCotas}" class="investment-estimate">Cotas estimadas: 1</p>`
                     : "";
                 const dividendoFII = categoriaInvestimentoAtual === "fiis"
@@ -325,6 +335,7 @@
                 <h4>${ativo.nome} <small>(${ativo.codigo})</small></h4>
                 <p class="asset-price">${formatMoney(ativo.preco)} por cota</p>
                 <p>Quantidade em carteira: ${ativo.quantidade}</p>
+                <p>Preço médio de compra: ${ativo.quantidade > 0 ? formatMoney(ativo.precoMedio) : "—"}</p>
                 ${estimativaCotas}
                 ${dividendoFII}
                 ${proventoAcao}
@@ -454,6 +465,23 @@
             return valorFinanciado * ((taxaMensal * Math.pow(1 + taxaMensal, prazoMeses)) / (Math.pow(1 + taxaMensal, prazoMeses) - 1));
         }
 
+        function calcularIpvaAnual(carro) {
+            return carro.preco * (carro.ipvaAliquota || 0.04);
+        }
+
+        function calcularIptuAnual(imovel) {
+            const imoveisNaoResidenciais = ["sala-comercial", "faria-lima", "predio-inteiro", "aeroporto"];
+            const aliquota = imoveisNaoResidenciais.includes(imovel.id) ? 0.015 : 0.01;
+            return imovel.valorAtual * aliquota;
+        }
+
+        function calcularImpostosAnuais() {
+            return {
+                ipva: gameState.carros.reduce((total, carro) => total + calcularIpvaAnual(carro), 0),
+                iptu: gameState.imoveis.reduce((total, imovel) => total + calcularIptuAnual(imovel), 0)
+            };
+        }
+
         function renderizarLojaVeiculos() {
             const lista = document.getElementById("lista-veiculos-disponiveis");
             lista.innerHTML = catalogoVeiculos.map(modelo => {
@@ -535,18 +563,14 @@
             const valorVeiculos = gameState.carros.reduce((total, carro) => total + carro.preco, 0);
             const imoveisEmMilhoes = valorImoveis / 1000000;
             const veiculosEmMilhoes = valorVeiculos / 1000000;
+            const fatorFamilia = Math.pow(1.13, pessoas - 1);
+            const fatorPatrimonio = 1 + (Math.log1p(imoveisEmMilhoes + veiculosEmMilhoes) * 0.04);
+            const adicionalCoberturaImoveis = (valorImoveis * 0.00006) + (quantidadeImoveis * 90);
+            const adicionalCoberturaVeiculos = valorVeiculos * 0.00001;
 
             return {
-                saude: 250
-                    * Math.pow(1.20, pessoas - 1)
-                    * Math.pow(1.08, quantidadeImoveis)
-                    * Math.pow(1.07, imoveisEmMilhoes)
-                    * Math.pow(1.04, veiculosEmMilhoes),
-                residencial: 100
-                    * Math.pow(1.18, pessoas - 1)
-                    * Math.pow(1.32, quantidadeImoveis)
-                    * Math.pow(1.13, imoveisEmMilhoes)
-                    * Math.pow(1.05, veiculosEmMilhoes)
+                saude: Math.min(5000, 250 * fatorFamilia * (1 + (quantidadeImoveis * 0.025)) * fatorPatrimonio),
+                residencial: Math.min(60000, (120 * fatorFamilia + adicionalCoberturaImoveis + adicionalCoberturaVeiculos) * fatorPatrimonio)
             };
         }
 
@@ -880,7 +904,7 @@
             document.getElementById('painel-curso-superior').hidden = gameState.curriculo < 2 || Boolean(gameState.cursoSuperior);
             document.getElementById('painel-pos-graduacao').hidden = !gameState.faculdadeConcluida || gameState.posGraduacao;
             document.getElementById('ui-chance-emprego').innerText = vagaSeguinte
-                ? `Próxima vaga: ${vagaSeguinte.titulo}. Chance atual de aprovação: ${Math.round(calcularChanceDeContratacao(vagaSeguinte) * 100)}%.`
+                ? `${vagaSeguinte.id === gameState.ultimoCargoId ? "Recontratação disponível" : "Próxima vaga"}: ${vagaSeguinte.titulo}. Chance atual de aprovação: ${Math.round(calcularChanceDeContratacao(vagaSeguinte) * 100)}%.`
                 : "Você alcançou o topo de carreira disponível para sua formação.";
             const candidaturaFeitaNoMes = gameState.ultimaCandidaturaMes === gameState.mesTotal;
             document.getElementById('btn-procurar-emprego').disabled = candidaturaFeitaNoMes || gameState.aposentado;
@@ -923,7 +947,7 @@
             document.getElementById('st-residencial').style.color = gameState.seguroResidencial ? "var(--accent)" : "var(--danger)";
             document.getElementById('custo-saude').innerText = `${formatMoney(premiosSeguros.saude)} / mês`;
             document.getElementById('custo-residencial').innerText = `${formatMoney(premiosSeguros.residencial)} / mês`;
-            document.getElementById('detalhe-seguros').innerText = `Prêmios exponenciais por família (${1 + (gameState.parceiro ? 1 : 0) + gameState.filhos.length} pessoa(s)), ${gameState.imoveis.length} imóvel(is), ${formatMoney(gameState.imoveis.reduce((total, imovel) => total + imovel.valorAtual, 0))} em imóveis e ${formatMoney(gameState.carros.reduce((total, carro) => total + carro.preco, 0))} em veículos.`;
+            document.getElementById('detalhe-seguros').innerText = `Prêmios progressivos por família (${1 + (gameState.parceiro ? 1 : 0) + gameState.filhos.length} pessoa(s)), ${gameState.imoveis.length} imóvel(is), ${formatMoney(gameState.imoveis.reduce((total, imovel) => total + imovel.valorAtual, 0))} em imóveis e ${formatMoney(gameState.carros.reduce((total, carro) => total + carro.preco, 0))} em veículos.`;
 
             // Família
             document.getElementById('ui-relacionamento').innerText = gameState.parceiro ? "Casado(a)" : "Solteiro(a)";
@@ -951,7 +975,8 @@
                     ? `Financiado (${carro.parcelasRestantes}x de ${formatMoney(carro.parcela)} restantes)`
                     : "Quitado";
                 htmlBens += `<div class="card-item">🚗 <strong>${carro.nome}</strong> — ${financiamento}<br>
-                    Valor: ${formatMoney(carro.preco)} | Gasto mensal: ${formatMoney(carro.custoMensal)} (5% do valor)</div>`;
+                    Valor: ${formatMoney(carro.preco)} | Gasto mensal: ${formatMoney(carro.custoMensal)} (5% do valor)<br>
+                    IPVA SP estimado: ${formatMoney(calcularIpvaAnual(carro) )}/ano (${((carro.ipvaAliquota || 0.04) * 100).toFixed(1)}%)</div>`;
             });
             gameState.imoveis.forEach((imv, idx) => {
                 const financiamento = imv.financiado && imv.parcelasRestantes > 0
@@ -961,11 +986,13 @@
                 htmlBens += `<div class="card-item">
                     🏡 <strong>${imv.nome}</strong> — ${financiamento}<br>
                     Valor atual: ${formatMoney(imv.valorAtual)} | Valorização: IPCA + ${(imv.taxaValorizacaoExtra * 100).toFixed(1)}% a.a.<br>
+                    IPTU SP estimado: ${formatMoney(calcularIptuAnual(imv))}/ano<br>
                     Status: ${imv.status === "alugado" ? `<span style="color:var(--accent)">Alugado (${formatMoney(aluguel)}/mês)</span>` : imv.status === "morando" ? '<span style="color:var(--accent)">Morando no imóvel</span>' : 'Desocupado'}
                     <div class="vehicle-actions">
                         <button class="btn-action" onclick="definirUsoImovel(${idx}, 'morando')">Morar nele</button>
                         <button class="btn-action btn-blue" onclick="definirUsoImovel(${idx}, 'desocupado')">Desocupar</button>
                         <button class="btn-action" onclick="definirUsoImovel(${idx}, 'alugado')">Alugar</button>
+                        <button class="btn-action btn-danger" onclick="venderImovel(${idx})">Vender imóvel</button>
                     </div>
                 </div>`;
             });
@@ -1024,10 +1051,10 @@
                 log("Conclua uma graduação antes de iniciar a pós-graduação.", "warn");
             } else if (gameState.posGraduacao) {
                 log("Você já concluiu uma pós-graduação.", "warn");
-            } else if (gameState.saldo < 6500) {
+            } else if (gameState.saldo < 50000) {
                 log("Saldo insuficiente para a pós-graduação.", "neg");
             } else {
-                gameState.saldo -= 6500;
+                gameState.saldo -= 50000;
                 gameState.posGraduacao = true;
                 gameState.curriculo = Math.max(gameState.curriculo, 4);
                 log("Pós-graduação concluída! Empresas passarão a observar seu perfil.", "pos");
@@ -1042,6 +1069,7 @@
             const chanceDemissao = 0.12 + ((10 - gameState.felicidade) * 0.06);
             if (Math.random() >= chanceDemissao) return;
 
+            gameState.ultimoCargoId = cargoAtual.id;
             gameState.cargoId = null;
             gameState.salario = 0;
             gameState.experienciaNoCargo = 0;
@@ -1053,6 +1081,7 @@
             if (!cargoAtual || gameState.aposentado) return;
             const chanceDemissao = 0.015;
             if (Math.random() >= chanceDemissao) return;
+            gameState.ultimoCargoId = cargoAtual.id;
             gameState.cargoId = null;
             gameState.salario = 0;
             gameState.experienciaNoCargo = 0;
@@ -1081,7 +1110,9 @@
                     gameState.cargoId = proximaVaga.id;
                     gameState.salario = proximaVaga.salario;
                     gameState.experienciaNoCargo = 0;
-                    log(`Você passou para ${proximaVaga.titulo}! Salário: ${formatMoney(proximaVaga.salario)}/mês.`, "pos");
+                    const foiRecontratacao = proximaVaga.id === gameState.ultimoCargoId;
+                    gameState.ultimoCargoId = null;
+                    log(`${foiRecontratacao ? "Você foi recontratado(a) como" : "Você passou para"} ${proximaVaga.titulo}! Salário: ${formatMoney(proximaVaga.salario)}/mês.`, "pos");
                 } else {
                     log(`A vaga de ${proximaVaga.titulo} não deu certo. A experiência exigida ainda torna a seleção difícil.`, "warn");
                 }
@@ -1145,6 +1176,7 @@
                 preco,
                 quantidade,
                 volatilidade: 0.14,
+                precoMedio: preco,
                 proventoPorAcao: Number((preco * (0.0015 + (empresa.saudeFinanceira / 100) * 0.006)).toFixed(2)),
                 empresaId: empresa.id
             });
@@ -1165,7 +1197,7 @@
 
         // INVESTIMENTOS
         function calcularCotas(categoria, id, campoValor, campoCotas) {
-            if (!["acoes", "fiis"].includes(categoria)) return;
+            if (!["acoes", "fiis", "etfs"].includes(categoria)) return;
             const ativo = obterAtivo(categoria, id);
             const valor = Number(document.getElementById(campoValor).value) || 0;
             const cotas = Math.floor(valor / ativo.preco);
@@ -1180,7 +1212,9 @@
             if (quantidade < 1) {
                 log(`Informe ao menos ${formatMoney(ativo.preco)} para comprar uma cota de ${ativo.codigo}.`, "warn");
             } else if (gameState.saldo >= valorAplicado) {
+                const quantidadeAnterior = ativo.quantidade;
                 gameState.saldo -= valorAplicado;
+                ativo.precoMedio = ((ativo.precoMedio || 0) * quantidadeAnterior + valorAplicado) / (quantidadeAnterior + quantidade);
                 ativo.quantidade += quantidade;
                 log(`Comprou ${quantidade} cota(s) de ${ativo.codigo} por ${formatMoney(valorAplicado)}.`, "pos");
             } else {
@@ -1198,6 +1232,7 @@
                 const valorVenda = quantidade * ativo.preco;
                 gameState.saldo += valorVenda;
                 ativo.quantidade -= quantidade;
+                if (ativo.quantidade === 0) ativo.precoMedio = 0;
                 log(`Vendeu ${quantidade} cota(s) de ${ativo.codigo} por ${formatMoney(valorVenda)}.`, "info");
             }
             updateUI();
@@ -1222,6 +1257,7 @@
                 id: modelo.id,
                 nome: modelo.nome,
                 preco: modelo.preco,
+                ipvaAliquota: modelo.ipvaAliquota || 0.04,
                 custoMensal: modelo.preco * 0.05,
                 financiado,
                 parcela,
@@ -1290,6 +1326,19 @@
             updateUI();
         }
 
+        function venderImovel(index) {
+            const imovel = gameState.imoveis[index];
+            if (!imovel) return;
+            const saldoDevedor = imovel.financiado && imovel.parcelasRestantes > 0
+                ? imovel.parcela * imovel.parcelasRestantes
+                : 0;
+            const valorLiquido = imovel.valorAtual - saldoDevedor;
+            gameState.saldo += valorLiquido;
+            gameState.imoveis.splice(index, 1);
+            log(`Você vendeu ${imovel.nome} por ${formatMoney(imovel.valorAtual)}${saldoDevedor > 0 ? ` e quitou ${formatMoney(saldoDevedor)} do financiamento` : ""}. Valor líquido recebido: ${formatMoney(valorLiquido)}.`, valorLiquido >= 0 ? "pos" : "warn");
+            updateUI();
+        }
+
         function toggleSeguro(tipo) {
             if (tipo === 'saude') gameState.seguroSaude = !gameState.seguroSaude;
             if (tipo === 'residencial') gameState.seguroResidencial = !gameState.seguroResidencial;
@@ -1348,6 +1397,40 @@
                 log("Você tirou férias e voltou ao trabalho mais descansado(a).", "pos");
             }
             updateUI();
+        }
+
+        function verificarEventoFilhoIndesejado() {
+            if (!gameState.parceiro || gameState.filhoIndesejadoPendente || gameState.jogoEncerrado) return false;
+            if (Math.random() >= 0.006) return false;
+            gameState.filhoIndesejadoPendente = true;
+            log("EVENTO INESPERADO: você terá um filho não planejado. Escolha um nome para continuar.", "warn");
+            return true;
+        }
+
+        function abrirPopupFilhoIndesejado() {
+            const dialogo = document.getElementById("filho-indesejado");
+            const campoNome = document.getElementById("nome-filho-indesejado");
+            campoNome.value = "";
+            if (!dialogo.open) dialogo.showModal();
+            campoNome.focus();
+        }
+
+        function nomearFilhoIndesejado() {
+            const campoNome = document.getElementById("nome-filho-indesejado");
+            const nome = campoNome.value.trim();
+            if (!nome) return;
+            if (gameState.filhos.some(filho => filho.nome.toLocaleLowerCase() === nome.toLocaleLowerCase())) {
+                log("Já existe um filho cadastrado com esse nome.", "warn");
+                return;
+            }
+            gameState.filhos.push({ nome, idadeMeses: 0, naoPlanejado: true });
+            gameState.filhoIndesejadoPendente = false;
+            document.getElementById("filho-indesejado").close();
+            log(`${nome} foi adicionado(a) à sua família. Os custos aumentam conforme a idade.`, "warn");
+            updateUI();
+            const relatorio = gameState.relatorioAguardandoNome;
+            gameState.relatorioAguardandoNome = null;
+            if (relatorio) mostrarRelatorioMensal(relatorio);
         }
 
         function renderizarItensRelatorio(itens, tipo) {
@@ -1598,6 +1681,17 @@
             }
 
             // 6. Dedução dos Custos Fixos Mensais
+            let impostosAnuais = 0;
+            const mesDoAno = ((gameState.mesTotal - 1) % 12) + 1;
+            if (mesDoAno === 1) {
+                const impostos = calcularImpostosAnuais();
+                impostosAnuais = impostos.iptu + impostos.ipva;
+                adicionarGasto("IPTU anual (São Paulo)", impostos.iptu);
+                adicionarGasto("IPVA anual (São Paulo)", impostos.ipva);
+                if (impostosAnuais > 0) {
+                    log(`Impostos anuais: IPTU de ${formatMoney(impostos.iptu)} e IPVA de ${formatMoney(impostos.ipva)} foram lançados.`, "warn");
+                }
+            }
             const possuiMoradiaPropria = gameState.imoveis.some(imovel => imovel.status === "morando");
             const custoMoradia = possuiMoradiaPropria ? 250 : 900;
             const custoAlimentacao = 600 + calcularCustoAlimentacaoFilhos();
@@ -1652,7 +1746,7 @@
             adicionarGasto("Parcelas de empréstimos", parcelasEmprestimos);
             adicionarGasto("Parcelas de consórcios", parcelasConsorcios);
 
-            let despesasTotais = custoVidaBase + custoFilhos + custoCarros + custoSeguros + parcelasFinanciamento + parcelasVeiculos + mensalidadeFaculdade + parcelasEmprestimos + parcelasConsorcios + prejuizoEmpresa;
+            let despesasTotais = custoVidaBase + custoFilhos + custoCarros + custoSeguros + parcelasFinanciamento + parcelasVeiculos + mensalidadeFaculdade + parcelasEmprestimos + parcelasConsorcios + prejuizoEmpresa + impostosAnuais;
 
             // Atualiza Saldo
             gameState.saldo += (receitas - despesasTotais);
@@ -1725,6 +1819,8 @@
                 }
             }
 
+            verificarEventoFilhoIndesejado();
+
             gameState.historicoPatrimonio.push({ mes: gameState.mesTotal, patrimonio: calcularPatrimonio() });
             gameState.historicoEconomia.push({ mes: gameState.mesTotal, selic: gameState.selic, inflacao: gameState.inflacao });
 
@@ -1739,7 +1835,13 @@
             }
 
             updateUI();
-            mostrarRelatorioMensal({ ganhos, gastos, saldoInicial });
+            const dadosRelatorio = { ganhos, gastos, saldoInicial };
+            if (gameState.filhoIndesejadoPendente) {
+                gameState.relatorioAguardandoNome = dadosRelatorio;
+                abrirPopupFilhoIndesejado();
+            } else {
+                mostrarRelatorioMensal(dadosRelatorio);
+            }
         }
 
         // Inicializar
